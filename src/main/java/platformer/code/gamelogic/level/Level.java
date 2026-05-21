@@ -199,10 +199,10 @@ public class Level {
 	private void water(int col, int row, Map map, int fullness) {
 		Water w = new Water(col, row, tileSize, tileset.getImage("Full_water" ),this, fullness);
 		map.addTile(col, row, w);
-		if(col+1<map.getTiles().length && map.getTiles()[col+1][row].isSolid()&&map.getTiles() instanceof Water == False){
+		if(col+1<map.getTiles().length && !map.getTiles()[col+1][row].isSolid()&& map.getTiles()[col+1][row] instanceof Water == False){
 			water(col+1, row, map, fullness);
 		}
-		if(col-1=0>map.getTiles().length && map.getTiles()[col-1][row].isSolid() instanceof Water == False){
+		if(col-1=0>!map.getTiles()[col-1][row] && map.getTiles()[col-1][row].isSolid()&& map.getTiles()[col+1][row] instanceof Water == False){
 			water(col, row, map, fullness);
 		}
 	}
