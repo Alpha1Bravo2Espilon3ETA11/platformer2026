@@ -202,7 +202,7 @@ public class Level {
 		if(col+1<map.getTiles().length && !map.getTiles()[col+1][row].isSolid()&& map.getTiles()[col+1][row] instanceof Water == false){
 			water(col+1, row, map, fullness);
 		}
-		if(col-1>=0 !map.getTiles()[col-1][row].isSolid() && map.getTiles()[col+1][row] instanceof Water == false){
+		if(col-1>=0 && !(map.getTiles()[col-1][row].isSolid() && map.getTiles()[col+1][row] instanceof Water == false)){
 			water(col-1, row, map, fullness);
 		}
 	}
