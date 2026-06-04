@@ -33,6 +33,9 @@ public class Tile{
 		if(hitbox != null) hitbox.draw(g);		
 	}
 	
+	public void setImage(BufferedImage img){
+		image = img;
+	}
 	
 	
 	//------------------------------------Getters
