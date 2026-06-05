@@ -36,6 +36,7 @@ public class Level {
 	private ArrayList<Enemy> enemiesList = new ArrayList<>();
 	private ArrayList<Flower> flowers = new ArrayList<>();
 
+
 	private List<PlayerDieListener> dieListeners = new ArrayList<>();
 	private List<PlayerWinListener> winListeners = new ArrayList<>();
 
@@ -45,6 +46,9 @@ public class Level {
 	private int tileSize;
 	private Tileset tileset;
 	public static float GRAVITY = 70;
+	public long waterTimer = 0;
+
+	
 
 	public Level(LevelData leveldata) {
 		this.leveldata = leveldata;
@@ -149,6 +153,7 @@ public class Level {
 	}
 
 	public void update(float tslf) {
+
 		if (active) {
 			// Update the player
 			player.update(tslf);
@@ -177,7 +182,12 @@ public class Level {
 					i--;
 				}
 			}
+			for (int i = 0; i < waters.size(); i++) {
+				if (waters.get(i).getHitbox().isIntersecting(player.getHitbox())) {
+				//water collision
 
+
+			
 			// Update the enemies
 			for (int i = 0; i < enemies.length; i++) {
 				enemies[i].update(tslf);
@@ -214,6 +224,7 @@ public class Level {
 		else {
 			w = new Water(col, row, tileSize, tileset.getImage("Full_water"), this, 3);
 		}
+		waters.add(w);
 		map.addTile(col, row, w);
 
         //check if we can go down
