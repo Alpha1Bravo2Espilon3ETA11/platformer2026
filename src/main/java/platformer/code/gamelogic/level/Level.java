@@ -1,3 +1,5 @@
+//Name: Arrune Nimalan
+//Date: 5/20/2026
 package platformer.code.gamelogic.level;
 
 import java.awt.Graphics;
@@ -36,7 +38,6 @@ public class Level {
 	private ArrayList<Enemy> enemiesList = new ArrayList<>();
 	private ArrayList<Flower> flowers = new ArrayList<>();
 
-
 	private List<PlayerDieListener> dieListeners = new ArrayList<>();
 	private List<PlayerWinListener> winListeners = new ArrayList<>();
 
@@ -46,9 +47,6 @@ public class Level {
 	private int tileSize;
 	private Tileset tileset;
 	public static float GRAVITY = 70;
-	public long waterTimer = 0;
-
-	
 
 	public Level(LevelData leveldata) {
 		this.leveldata = leveldata;
@@ -122,6 +120,8 @@ public class Level {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Half_water"), this, 2);
 				else if (values[x][y] == 21)
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Quarter_water"), this, 1);
+				else if (values[x][y] == 22)
+					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Yoshi_egg"), this);
 			}
 
 		}
@@ -153,7 +153,6 @@ public class Level {
 	}
 
 	public void update(float tslf) {
-
 		if (active) {
 			// Update the player
 			player.update(tslf);
@@ -172,22 +171,15 @@ public class Level {
 
 			for (int i = 0; i < flowers.size(); i++) {
 				if (flowers.get(i).getHitbox().isIntersecting(player.getHitbox())) {
-					if(flowers.get(i).getType() == 1){
-						water(flowers.get(i).getCol(), flowers.get(i).getRow(), map, 3);	
-					}				
-					else{}
+					if(flowers.get(i).getType() == 1)
+						water(flowers.get(i).getCol(), flowers.get(i).getRow(), map, 3);
+					else
 						addGas(flowers.get(i).getCol(), flowers.get(i).getRow(), map, 20, new ArrayList<Gas>());
-					}
 					flowers.remove(i);
 					i--;
 				}
 			}
-			for (int i = 0; i < waters.size(); i++) {
-				if (waters.get(i).getHitbox().isIntersecting(player.getHitbox())) {
-				//water collision
 
-
-			
 			// Update the enemies
 			for (int i = 0; i < enemies.length; i++) {
 				enemies[i].update(tslf);
@@ -203,7 +195,36 @@ public class Level {
 			camera.update(tslf);
 		}
 	}
-	
+
+	private void addGas(int col, int row, Map map, int numSquaresToFill, ArrayList<Gas> placedThisRound) {
+		Gas g0 = new Gas (col, row, tileSize, tileset.getImage("GasOne"), this, 0);
+		placedThisRound.add(g0);
+		map.addTile(col, row, g0);
+		int[][] gasPos = {{0, -1}, {1, -1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {1, 1}, {-1, 1}};
+		int in = 0;
+		while (placedThisRound.size() < numSquaresToFill){
+			row = placedThisRound.get(in).getRow();
+			col = placedThisRound.get(in).getCol();
+			for (int i = 0; i < gasPos.length; i++){
+				int nearbyCol = col + gasPos[i][0];
+				int nearbyRow = row + gasPos[i][1];
+				if (numSquaresToFill > 0){
+					if ((nearbyCol < map.getTiles().length || nearbyCol > 0) && (nearbyRow < map.getTiles()[col].length || nearbyRow > 0)){
+						if (!(map.getTiles()[nearbyCol][nearbyRow].isSolid())){
+							if (!(map.getTiles()[nearbyCol][nearbyRow] instanceof Gas)){
+								Gas g1 = new Gas(nearbyCol, nearbyRow, tileSize, tileset.getImage("GasOne"), this, 0);
+								placedThisRound.add(g1);
+								map.addTile(nearbyCol, nearbyRow, g1);
+									
+							}
+						}
+					}
+				}
+				
+			}
+			in++;
+		}
+	}
 	
 	//#############################################################################################################
 	//Your code goes here! 
@@ -224,11 +245,10 @@ public class Level {
 		else {
 			w = new Water(col, row, tileSize, tileset.getImage("Full_water"), this, 3);
 		}
-		waters.add(w);
 		map.addTile(col, row, w);
 
         //check if we can go down
-        //if we cant go down go left and right.
+        //if we can’t go down go left and right.
 		if (row+1 < map.getTiles()[col].length && !(map.getTiles()[col][row+1].isSolid()) && !(map.getTiles()[col][row+1] instanceof Water)){
 			water(col, row+1, map, 0);
 		}
@@ -268,9 +288,7 @@ public class Level {
 			}
 		}
 	}
-
-
-
+	
 	public void draw(Graphics g) {
 	   	 g.translate((int) -camera.getX(), (int) -camera.getY());
 	   	 // Draw the map
@@ -328,7 +346,7 @@ public class Level {
 	   	 if (Camera.SHOW_CAMERA)
 	   		 camera.draw(g);
 	   	 g.translate((int) +camera.getX(), (int) +camera.getY());
-	    }
+	}
 
 
 	// --------------------------Die-Listener
@@ -374,6 +392,3 @@ public class Level {
 		return player;
 	}
 }
-
-
-

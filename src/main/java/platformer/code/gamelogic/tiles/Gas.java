@@ -1,10 +1,11 @@
 package platformer.code.gamelogic.tiles;
 
+
 import java.awt.image.BufferedImage;
+
 
 import platformer.code.gameengine.hitbox.RectHitbox;
 import platformer.code.gamelogic.level.Level;
-
 
 
 public class Gas extends Tile{
