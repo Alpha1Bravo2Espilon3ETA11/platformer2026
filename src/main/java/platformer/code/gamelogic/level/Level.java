@@ -256,7 +256,7 @@ public class Level {
 				water(col, row+1, map, 0);
 			}
 		}
-		else if(){
+		else if(row-1>= &&!(map.getTiles()[col][])){
 			//right
 			if(col+1 < map.getTiles().length && !(map.getTiles()[col+1][row] instanceof Water) && !(map.getTiles()[col+1][row].isSolid())) {
 				if (fullness == 1){
