@@ -247,15 +247,18 @@ public class Level {
 		}
 		map.addTile(col, row, w);
 
-        //check if we can go down
+
+		//check if we can go down
         //if we can’t go down go left and right.
-		if (row+1 < map.getTiles()[col].length && !(map.getTiles()[col][row+1].isSolid()) && !(map.getTiles()[col][row+1] instanceof Water)){
-			water(col, row+1, map, 0);
+		if (row+1 < map.getTiles()[col].length && !(map.getTiles()[col][row+1].isSolid())){
+			if (row+2< map.getTiles()[col].length  && map.getTiles()[col][row+2].isSolid())
+				water(col, row+1, map, 3);
+			else{
+				water(col, row+1, map, 0);
+			}
 		}
-		else if (row+1 < map.getTiles()[col].length && map.getTiles()[col][row+1].isSolid() && fullness == 0){
-			water(col, row, map, 3);	
-		}
-		else{
+		//if(row-1>= &&!(map.getTiles()[col][row-1]))
+		else {
 			//right
 			if(col+1 < map.getTiles().length && !(map.getTiles()[col+1][row] instanceof Water) && !(map.getTiles()[col+1][row].isSolid())) {
 				if (fullness == 1){

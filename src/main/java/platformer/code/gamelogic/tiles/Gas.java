@@ -25,4 +25,4 @@ public class Gas extends Tile{
    	 super.update(tslf);
    	 super.setImage(image);
     }
-} //if(row-1>= &&!(map.getTiles()[col][row-1]))
+} 
