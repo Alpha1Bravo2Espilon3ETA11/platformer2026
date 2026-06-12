@@ -25,6 +25,7 @@ import platformer.code.gamelogic.tiles.SolidTile;
 import platformer.code.gamelogic.tiles.Spikes;
 import platformer.code.gamelogic.tiles.Tile;
 import platformer.code.gamelogic.tiles.Water;
+import platformer.code.gamelogic.level.NewWorld;
 
 public class Level {
 
