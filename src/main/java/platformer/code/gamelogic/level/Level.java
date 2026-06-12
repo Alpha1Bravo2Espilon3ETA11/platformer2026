@@ -1,7 +1,10 @@
-//Name: Diego Aldworth
-//Date: 6/10/2026
+//Diego Aldworth
+//6/8/26
+
 package platformer.code.gamelogic.level;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +40,9 @@ public class Level {
 
 	private ArrayList<Enemy> enemiesList = new ArrayList<>();
 	private ArrayList<Flower> flowers = new ArrayList<>();
+	private ArrayList<Water> waters = new ArrayList<>();
+	private ArrayList<Gas> gasList = new ArrayList<>();
+	private ArrayList<SolidTile> robotList = new ArrayList<>();
 
 	private List<PlayerDieListener> dieListeners = new ArrayList<>();
 	private List<PlayerWinListener> winListeners = new ArrayList<>();
@@ -47,6 +53,8 @@ public class Level {
 	private int tileSize;
 	private Tileset tileset;
 	public static float GRAVITY = 70;
+	private long gasTime = 0;
+	private long poison = 5;
 
 	public Level(LevelData leveldata) {
 		this.leveldata = leveldata;
@@ -62,6 +70,10 @@ public class Level {
 	}
 
 	public void restartLevel() {
+		waters.clear();
+		gasList.clear();
+		gasTime = 0;
+
 		int[][] values = mapdata.getValues();
 		Tile[][] tiles = new Tile[width][height];
 
@@ -91,7 +103,7 @@ public class Level {
 				else if (values[x][y] == 7)
 					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Grass"), this);
 				else if (values[x][y] == 8)
-					enemiesList.add(new Enemy(xPosition*tileSize, yPosition*tileSize, this)); // TODO: objects vs tiles
+					enemiesList.add(new Enemy(xPosition*tileSize, yPosition*tileSize, this));
 				else if (values[x][y] == 9)
 					tiles[x][y] = new Flag(xPosition, yPosition, tileSize, tileset.getImage("Flag"), this);
 				else if (values[x][y] == 10) {
@@ -120,8 +132,10 @@ public class Level {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Half_water"), this, 2);
 				else if (values[x][y] == 21)
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Quarter_water"), this, 1);
-				else if (values[x][y] == 22)
-					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Yoshi_egg"), this);
+				else if (values[x][y] == 22) {
+					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Robot"), this);
+					robotList.add((SolidTile) tiles[x][y]);
+				}
 			}
 
 		}
@@ -131,6 +145,7 @@ public class Level {
 		for (int i = 0; i < enemiesList.size(); i++) {
 			enemies[i] = new Enemy(enemiesList.get(i).getX(), enemiesList.get(i).getY(), this);
 		}
+
 		player = new Player(leveldata.getPlayerX() * map.getTileSize(), leveldata.getPlayerY() * map.getTileSize(),
 				this);
 		camera.setFocusedObject(player);
@@ -193,105 +208,127 @@ public class Level {
 
 			// Update the camera
 			camera.update(tslf);
-		}
-	}
 
-	private void addGas(int col, int row, Map map, int numSquaresToFill, ArrayList<Gas> placedThisRound) {
-		Gas g0 = new Gas (col, row, tileSize, tileset.getImage("GasOne"), this, 0);
-		placedThisRound.add(g0);
-		map.addTile(col, row, g0);
-		int[][] gasPos = {{0, -1}, {1, -1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {1, 1}, {-1, 1}};
-		int in = 0;
-		while (placedThisRound.size() < numSquaresToFill){
-			row = placedThisRound.get(in).getRow();
-			col = placedThisRound.get(in).getCol();
-			for (int i = 0; i < gasPos.length; i++){
-				int nearbyCol = col + gasPos[i][0];
-				int nearbyRow = row + gasPos[i][1];
-				if (numSquaresToFill > 0){
-					if ((nearbyCol < map.getTiles().length || nearbyCol > 0) && (nearbyRow < map.getTiles()[col].length || nearbyRow > 0)){
-						if (!(map.getTiles()[nearbyCol][nearbyRow].isSolid())){
-							if (!(map.getTiles()[nearbyCol][nearbyRow] instanceof Gas)){
-								Gas g1 = new Gas(nearbyCol, nearbyRow, tileSize, tileset.getImage("GasOne"), this, 0);
-								placedThisRound.add(g1);
-								map.addTile(nearbyCol, nearbyRow, g1);
-									
-							}
-						}
-					}
+			// Update the water
+			boolean check = false;
+			for (int i = 0; i < waters.size(); i++) {
+				waters.get(i).update(tslf);
+				if (player.getHitbox().isIntersecting(waters.get(i).getHitbox())) {
+					player.walkSpeed = 100;
+					check = true;
 				}
-				
+				else if (check == false){
+					player.walkSpeed = 400;
+				}
 			}
-			in++;
+			check = false;
+
+			//Update Gas
+			boolean inGas = false;
+			for (int i = 0; i < gasList.size(); i++) {
+				gasList.get(i).update(tslf);
+				if (player.getHitbox().isIntersecting(gasList.get(i).getHitbox())) {
+					inGas = true;
+				}
+			}
+			if (inGas == true) {
+				if (gasTime == 0) {	
+					gasTime = System.currentTimeMillis();
+				}
+				else if ((System.currentTimeMillis() - gasTime) / 1000 >= poison){
+					onPlayerDeath();
+					inGas = false;
+				}
+			}
+			else {
+				gasTime = 0;
+			}	
 		}
 	}
+	
 	
 	//#############################################################################################################
 	//Your code goes here! 
 	//Please make sure you read the rubric/directions carefully and implement the solution recursively!
-	//Precondition: Column and row are in bounds, map exists, and fullness is equal to 0, 1, 2, or 3
-	//Postcondition: Changes the image of the water object (either falling, quarter, half, or full)
 	private void water(int col, int row, Map map, int fullness) {
 		Water w;
-		if (fullness == 0){
+		if (fullness == 0) {
 			w = new Water(col, row, tileSize, tileset.getImage("Falling_water"), this, 0);
 		}
-		else if (fullness == 1){
-			w = new Water(col, row, tileSize, tileset.getImage("Quarter_water"), this, 1);
-		}
-		else if (fullness == 2){
+		else if (fullness == 2) {
 			w = new Water(col, row, tileSize, tileset.getImage("Half_water"), this, 2);
+		}
+		else if (fullness == 1) {
+			w = new Water(col, row, tileSize, tileset.getImage("Quarter_water"), this, 1);
 		}
 		else {
 			w = new Water(col, row, tileSize, tileset.getImage("Full_water"), this, 3);
 		}
+
+		waters.add(w);
 		map.addTile(col, row, w);
 
-
-		//check if we can go down
-        //if we can’t go down go left and right.
-		if (row+1 < map.getTiles()[col].length && !(map.getTiles()[col][row+1].isSolid())){
-			if (row+2< map.getTiles()[col].length  && map.getTiles()[col][row+2].isSolid())
-				water(col, row+1, map, 3);
-			else{
-				water(col, row+1, map, 0);
-			}
+		if (row+1 < map.getTiles()[col].length && map.getTiles()[col][row+1].isSolid() == false) {
+			water(col, row+1, map, 0);
 		}
-		//if(row-1>= &&!(map.getTiles()[col][row-1]))
+
 		else {
-			//right
-			if(col+1 < map.getTiles().length && !(map.getTiles()[col+1][row] instanceof Water) && !(map.getTiles()[col+1][row].isSolid())) {
-				if (fullness == 1){
-					water(col+1, row, map, 1);
-				}
-				else if (fullness == 2){
-					water(col+1, row, map, 1);
-				}
-				else if (fullness == 0){
-					water(col+1, row, map, 3);
-				}
-				else{
+			if(col+1 < map.getTiles().length && !(map.getTiles()[col+1][row] instanceof Water && !(map.getTiles()[col+1][row].isSolid()))) {
+				if (fullness == 3  && !map.getTiles()[col+1][row].isSolid()) {
 					water(col+1, row, map, 2);
-				}	
+				}
+				else if (fullness == 2 && !map.getTiles()[col+1][row].isSolid()) {
+					water(col+1, row, map, 1);
+				}
+				else if (fullness == 1 && !map.getTiles()[col+1][row].isSolid()) {
+					water(col+1, row, map, 1);
+				}
 			}
-			//left
-			if(col-1 >= 0 && !(map.getTiles()[col-1][row] instanceof Water) && !(map.getTiles()[col-1][row].isSolid())) {
-				if (fullness == 1){
-					water(col-1, row, map, 1);
-				}
-				else if (fullness == 2){
-					water(col-1, row, map, 1);
-				}
-				else if (fullness == 0){
-					water(col-1, row, map, 3);
-				}
-				else{
+
+			if (col-1 >= 0 && !(map.getTiles()[col-1][row] instanceof Water)) {
+				if (fullness == 3 && !map.getTiles()[col-1][row].isSolid()) {
 					water(col-1, row, map, 2);
 				}
+				else if (fullness == 2 && !map.getTiles()[col-1][row].isSolid()) {
+					water(col-1, row, map, 1);
+				}
+				else if (fullness == 1 && !map.getTiles()[col-1][row].isSolid()) {
+					water(col-1, row, map, 1);
+				}
 			}
 		}
+		if (fullness == 0 && row+1 < map.getTiles()[col].length && map.getTiles()[col][row+1].isSolid()) {
+			water(col, row, map, 3);
+		}
+
 	}
 	
+	//Adds gas tiles until the requisite number of squares are filled or there is no more room 
+	//Pre-conditon: Player hits a curved flower
+	//Pos-conditon: Gas fills the air according the rules and it will keep drawing gas until it reaches numSquaresToFill
+	private void addGas(int col, int row, Map map, int numSquaresToFill, ArrayList<Gas> placedThisRound) {
+		Gas g = new Gas(col, row, tileSize, tileset.getImage("GasOne"), this, 0);
+		map.addTile(col, row, g);
+		placedThisRound.add(g);
+		int[][] grid = {{-1, 0}, {-1, 1}, {-1, -1}, {0, 1}, {0, -1}, {1, 0}, {1, 1}, {1, -1}};
+		int index = 0;
+		while (placedThisRound.size() < numSquaresToFill && index < placedThisRound.size()) {
+			col = placedThisRound.get(index).getCol();
+			row = placedThisRound.get(index).getRow();
+			for (int i = 0; i < grid.length; i++) {
+				if (numSquaresToFill > 0 && (col + grid[i][1] < map.getTiles().length || col + grid[i][1] > 0) && (row + grid[i][0] < map.getTiles()[col].length || row + grid[i][0] > 0) && !(map.getTiles()[col+ grid[i][1]][row + grid[i][0]].isSolid()) && map.getTiles()[col+ grid[i][1]][row + grid[i][0]] instanceof Gas == false) {
+					if (placedThisRound.size() < numSquaresToFill) {
+						Gas g2 = new Gas(col+ grid[i][1], row + grid[i][0], tileSize, tileset.getImage("GasOne"), this, 0);
+						map.addTile(col+ grid[i][1], row + grid[i][0], g2);
+						placedThisRound.add(g2);
+					}
+				}
+			}
+			index++;
+		}
+		gasList.addAll(placedThisRound);
+	}
+
 	public void draw(Graphics g) {
 	   	 g.translate((int) -camera.getX(), (int) -camera.getY());
 	   	 // Draw the map
@@ -332,11 +369,27 @@ public class Level {
 	   		 }
 	   	 }
 
+		 //Draw Gas Timer
+
+		 if (gasTime > 0) {
+			long elapsed = (System.currentTimeMillis() - gasTime) / 1000;
+			long left = poison - elapsed;
+			if (left < 0) {
+				left = 0;
+			}
+
+			g.setColor(Color.RED);
+			g.setFont(new Font("Ariel", Font.BOLD, 14));
+		 	g.drawString("POISON: " + left, (int) player.getX(), (int) (player.getY()-20));
+		 }
+		 
+
 
 	   	 // Draw the enemies
 	   	 for (int i = 0; i < enemies.length; i++) {
 	   		 enemies[i].draw(g);
 	   	 }
+
 
 
 	   	 // Draw the player
@@ -349,7 +402,7 @@ public class Level {
 	   	 if (Camera.SHOW_CAMERA)
 	   		 camera.draw(g);
 	   	 g.translate((int) +camera.getX(), (int) +camera.getY());
-	}
+	    }
 
 
 	// --------------------------Die-Listener
