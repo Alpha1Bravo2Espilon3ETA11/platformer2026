@@ -54,6 +54,9 @@ public class Level {
 	private int tileSize;
 	private Tileset tileset;
 	public static float GRAVITY = 70;
+	private float WATERGRAVITY = GRAVITY+GRAVITY/2;
+	private long waterTimer=0;
+	private long waterLimit = 5;
 	private long gasTime = 0;
 	private long poison = 5;
 
@@ -195,6 +198,23 @@ public class Level {
 					i--;
 				}
 			}
+			boolean record = true;
+			for (int i=0; i<waters.size(); i++){
+				if (waters.get(i).getHitbox().isIntersecting(player.getHitbox())) {
+					record = false;
+					if(waterTimer==0){
+						waterTimer=System.currentTimeMillis();
+					}
+					else{
+						if((System.currentTimeMillis()-waterTimer)/1000>=waterLimit){
+							GRAVITY = WATERGRAVITY;
+						}
+					}
+				}
+			}
+			if(record){
+				GRAVITY=70;
+			}
 
 			// Update the enemies
 			for (int i = 0; i < enemies.length; i++) {
@@ -303,6 +323,7 @@ public class Level {
 		}
 
 	}
+	
 	
 	//Adds gas tiles until the requisite number of squares are filled or there is no more room 
 	//Pre-conditon: Player hits a curved flower
